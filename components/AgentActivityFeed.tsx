@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import type { ActivityEvent } from '@/lib/schemas';
 
@@ -30,6 +30,11 @@ export function AgentActivityFeed({
 }) {
   const [events, setEvents] = useState<ActivityEvent[]>(initialEvents);
   const [loading, setLoading] = useState(false);
+  // Times are shown in the viewer's timezone, which the server (UTC on the
+  // host) cannot know — so render them only after hydration, or the server
+  // and browser text differ and React throws a hydration error.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   async function refresh() {
     setLoading(true);
@@ -74,7 +79,7 @@ export function AgentActivityFeed({
               <span className="min-w-0 flex-1 truncate text-os-muted" title={e.summary}>
                 {e.summary}
               </span>
-              <span className="shrink-0 text-os-dim">{clock(e.at)}</span>
+              <span className="shrink-0 text-os-dim">{mounted ? clock(e.at) : ''}</span>
             </li>
           ))}
         </ul>
