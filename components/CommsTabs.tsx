@@ -40,7 +40,7 @@ export function CommsTabs({
     return (
       <button
         onClick={() => setTab(id)}
-        className={`flex items-center gap-2 rounded-[5px] px-3.5 py-1.5 font-mono text-[12px] font-semibold transition-colors ${
+        className={`flex items-center gap-2 rounded-[5px] px-3.5 py-1.5 font-mono text-[12px] font-semibold transition-colors max-sm:gap-1.5 max-sm:px-2.5 ${
           active ? 'bg-[var(--accent-soft)] text-os-accent' : 'text-os-dim hover:text-os-muted'
         }`}
       >
@@ -60,7 +60,7 @@ export function CommsTabs({
           <TabButton id="messaging" icon={MessageSquare} label="Messaging" count={unread} />
           <TabButton id="meetings" icon={CalendarDays} label="Meetings" count={events.length} />
         </div>
-        <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.15em] text-os-dim">
+        <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.15em] text-os-dim max-sm:hidden">
           {tab === 'messaging' ? `${unread} unread` : 'next 7 days'}
         </span>
       </div>

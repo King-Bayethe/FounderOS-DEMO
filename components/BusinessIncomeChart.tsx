@@ -56,14 +56,14 @@ export function BusinessIncomeChart({ series }: { series: BusinessSeries }) {
 
   return (
     <div className="rounded-lg-t border border-os-border bg-os-surface p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
           <div className="text-sm font-semibold">{series.business}</div>
           <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-os-dim">
             {metric === 'in' ? 'income · bank deposits' : metric === 'out' ? 'outflow · bank debits' : 'net · after money out'}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           <select
             value={metric}
             onChange={(e) => setMetric(e.target.value as Metric)}

@@ -316,9 +316,9 @@ export function AudienceConsistency({
           rides shotgun on the right, not slammed underneath */}
       <div className={aside ? 'grid gap-6 lg:grid-cols-[1.55fr_1fr]' : ''}>
         <div className="flex min-w-0 flex-col">
-          <div className="mb-2 flex items-center justify-between gap-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-os-dim">Combined audience</span>
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2.5">
               {netLabel}
               <RangeChips value={range} onChange={setRange} />
               <button

@@ -50,7 +50,9 @@ export function layoutBrainNodes(clusters: BrainCluster[]): {
       const a = ((angle + (span * (i + 0.5)) / cluster.pages) * Math.PI) / 180;
       const jitter = ((ci * 7 + i * 13) % 10) - 5;
       const r = RING_R + jitter;
-      nodes.push({ x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) });
+      // Rounded so the server and browser serialize identical SVG coordinates
+      // (unrounded trig differs in the last digit and breaks hydration).
+      nodes.push({ x: Math.round((CX + r * Math.cos(a)) * 100) / 100, y: Math.round((CY + r * Math.sin(a)) * 100) / 100 });
     }
     angle += span;
   });

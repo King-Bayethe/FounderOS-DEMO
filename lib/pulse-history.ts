@@ -60,6 +60,8 @@ export type PulseFacts = {
   health: number | null;
   brainConnected: boolean;
   failedRuns: number;
+  /** Connectors running on demo sample data (demo mode) — not counted as down. */
+  demo?: number;
 };
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -72,13 +74,15 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
  */
 export function stateOfWorld(f: PulseFacts): StateSegment[] {
   const segs: StateSegment[] = [];
-  const down = Math.max(0, f.totalConnectors - f.connected);
+  const demo = f.demo ?? 0;
+  const down = Math.max(0, f.totalConnectors - f.connected - demo);
 
   if (f.failedRuns > 0) segs.push({ text: `${plural(f.failedRuns, 'run')} failed`, tone: 'err' });
   if (!f.brainConnected) segs.push({ text: 'G-Brain offline', tone: 'err' });
   else if (f.health != null && f.health < 70) segs.push({ text: `G-Brain degraded ${f.health}/100`, tone: 'warn' });
   if (down > 0) segs.push({ text: `${plural(down, 'connector')} down`, tone: 'warn' });
   if (f.inbound > 0) segs.push({ text: `${f.inbound} inbound need reply`, tone: 'accent' });
+  if (demo > 0) segs.push({ text: `${plural(demo, 'connector')} on demo data`, tone: 'dim' });
 
   const hadAttention = segs.length > 0;
   segs.push({ text: `${f.activeAgents}/${f.totalAgents} agents live`, tone: f.activeAgents > 0 ? 'ok' : 'dim' });

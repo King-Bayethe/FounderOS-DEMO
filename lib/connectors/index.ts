@@ -21,6 +21,7 @@ import { ghlStatus } from '@/lib/connectors/ghl';
 import { getBrainProvider } from '@/lib/brain';
 import { resolveManychatKey, runtimeEnv } from '@/lib/creds';
 import type { ConnectorStatus } from '@/lib/connectors/types';
+import { isDemoMode } from '@/lib/demo/mode';
 
 async function brainConnectorStatus(): Promise<ConnectorStatus> {
   const status = await getBrainProvider().status();
@@ -68,8 +69,18 @@ const CHECKS: [string, ConnectorStatus['kind'], () => Promise<ConnectorStatus>][
   ['notion', 'notion', () => notionStatus(runtimeEnv())],
 ];
 
+/**
+ * Demo mode: a connector that is not really connected reads "demo" (its screen
+ * runs on fictional sample data) instead of "down". A live connector is never
+ * relabelled.
+ */
+export function asDemoStatus(status: ConnectorStatus): ConnectorStatus {
+  if (status.state === 'connected' || status.state === 'demo') return status;
+  return { ...status, state: 'demo', detail: `Demo data · ${status.detail}` };
+}
+
 export async function allConnectorStatuses(): Promise<ConnectorStatus[]> {
-  return Promise.all(
+  const statuses = await Promise.all(
     CHECKS.map(([id, kind, check]) =>
       check().catch(
         (err): ConnectorStatus => ({
@@ -82,4 +93,5 @@ export async function allConnectorStatuses(): Promise<ConnectorStatus[]> {
       ),
     ),
   );
+  return isDemoMode() ? statuses.map(asDemoStatus) : statuses;
 }

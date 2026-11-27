@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { sendSlackMessage } from '@/lib/connectors/slack';
 import { sendEmailReply } from '@/lib/connectors/email';
+import { isDemoAccount, isDemoMode } from '@/lib/demo/mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,11 @@ export async function POST(request: Request) {
   if (parsed.data.source === 'slack') {
     const result = await sendSlackMessage(parsed.data.channel, parsed.data.text);
     return NextResponse.json(result, { status: result.ok ? 200 : 502 });
+  }
+
+  // Demo inbox: nothing is ever sent from the public demo.
+  if (isDemoMode() && isDemoAccount(parsed.data.account)) {
+    return NextResponse.json({ ok: true, demo: true, detail: 'Demo mode: reply drafted, nothing was sent.' });
   }
 
   const result = await sendEmailReply({

@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import type { BrainProvider, BrainSearchResult, BrainStatus } from '@/lib/brain';
+import { isDemoMode } from '@/lib/demo/mode';
+import { demoBrainOverview } from '@/lib/demo/brain';
 
 export type ExecResult = { stdout: string; stderr: string; code: number };
 export type ExecFn = (cmd: string, args: string[], stdin?: string) => Promise<ExecResult>;
@@ -190,6 +192,9 @@ export function createGBrainProvider(opts: { exec?: ExecFn; storePath?: string }
         }
       }
       const firstError = (result.stderr || result.stdout).split('\n').find(Boolean) ?? 'gbrain CLI unavailable';
+      if (isDemoMode()) {
+        return { connected: true, provider: 'gbrain', detail: 'gbrain demo · health 92/100 · sample knowledge core' };
+      }
       return {
         connected: false,
         provider: 'gbrain',
@@ -251,6 +256,8 @@ export function createGBrainProvider(opts: { exec?: ExecFn; storePath?: string }
         }
       }
       const firstError = (result.stderr || result.stdout).split('\n').find(Boolean) ?? 'gbrain CLI unavailable';
+      // Demo mode: no reachable brain → a healthy sample readout, labelled demo.
+      if (isDemoMode()) return demoBrainOverview(storePath, store.totalFiles);
       return {
         store,
         doctor: {

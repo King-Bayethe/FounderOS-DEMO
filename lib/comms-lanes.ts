@@ -12,8 +12,10 @@ import type { ConnectorState, ConnectorStatus } from '@/lib/connectors/types';
 import { parseInboxConfigs, latestEmails, emailStatus } from '@/lib/connectors/email';
 import { recentChats, whatsappStatus } from '@/lib/connectors/whatsapp';
 import { getDb } from '@/lib/data';
+import { isDemoMode } from '@/lib/demo/mode';
+import { DEMO_INBOXES, demoEmails, demoInstagram, demoWhatsapp } from '@/lib/demo/comms';
 
-export type LaneSource = 'email' | 'whatsapp';
+export type LaneSource = 'email' | 'whatsapp' | 'instagram';
 
 export type CommsLaneItem = {
   id: string;
@@ -76,8 +78,10 @@ export function buildCommsLanes(input: {
   whatsapp: CommsItem[];
   whatsappState: ConnectorStatus;
   tags: ContactTag[];
+  /** Instagram DMs — only present when a DM source (or demo mode) supplies them. */
+  instagram?: { items: CommsItem[]; state: ConnectorStatus };
 }): CommsLane[] {
-  const { inboxes, emails, emailState, whatsapp, whatsappState, tags } = input;
+  const { inboxes, emails, emailState, whatsapp, whatsappState, tags, instagram } = input;
   const lanes: CommsLane[] = [];
 
   // one lane per configured inbox (in slot order); the four share the aggregate
@@ -110,6 +114,17 @@ export function buildCommsLanes(input: {
   }));
   lanes.push(makeLane('whatsapp', 'WhatsApp', 'whatsapp', whatsappState, waItems, tags));
 
+  if (instagram) {
+    const igItems: CommsLaneItem[] = instagram.items.map((d, i) => ({
+      id: `instagram:${d.ts}:${i}`,
+      sender: d.sender ?? d.title,
+      preview: d.preview,
+      ts: d.ts,
+      unread: d.unread ?? 0,
+    }));
+    lanes.push(makeLane('instagram', 'Instagram DMs', 'instagram', instagram.state, igItems, tags));
+  }
+
   return lanes;
 }
 
@@ -132,6 +147,46 @@ export async function gatherCommsLanes(): Promise<{
   ]);
   const tags = getDb().contactTags.all();
   const inboxes = inboxCfgs.map((c) => ({ id: c.id, name: c.name }));
+
+  // Demo mode: a source with no real connection is filled with fictional
+  // sample threads and labelled "demo". A configured source is never touched.
+  if (isDemoMode()) {
+    const emailDemo = inboxes.length === 0;
+    const waDemo = whatsappState.state !== 'connected';
+    const demoEmailState: ConnectorStatus = {
+      ...emailState,
+      state: 'demo',
+      detail: 'Demo inboxes with sample threads. Add INBOX_1_HOST / _USER / _PASS to read a real inbox.',
+    };
+    const demoWaState: ConnectorStatus = {
+      ...whatsappState,
+      state: 'demo',
+      detail: 'Sample WhatsApp chats. Runs against the local WhatsApp store on the operator machine.',
+    };
+    const igState: ConnectorStatus = {
+      id: 'instagram',
+      name: 'Instagram DMs',
+      kind: 'social',
+      state: 'demo',
+      detail: 'Sample Instagram DMs. Live DMs arrive through the ManyChat webhook.',
+    };
+    const finalEmailState = emailDemo ? demoEmailState : emailState;
+    const finalWaState = waDemo ? demoWaState : whatsappState;
+    return {
+      lanes: buildCommsLanes({
+        inboxes: emailDemo ? DEMO_INBOXES : inboxes,
+        emails: emailDemo ? demoEmails() : emails,
+        emailState: finalEmailState,
+        whatsapp: waDemo ? demoWhatsapp() : whatsapp,
+        whatsappState: finalWaState,
+        tags,
+        instagram: { items: demoInstagram(), state: igState },
+      }),
+      emailState: finalEmailState,
+      whatsappState: finalWaState,
+    };
+  }
+
   return {
     lanes: buildCommsLanes({ inboxes, emails, emailState, whatsapp, whatsappState, tags }),
     emailState,

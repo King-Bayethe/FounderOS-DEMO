@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   Archive,
+  Instagram,
   Mail,
   MailOpen,
   Maximize2,
@@ -21,7 +22,7 @@ import { Badge, Dot } from '@/components/terminal';
 import { replySubject, type EmailThread } from '@/lib/email-thread';
 import type { CommsLane, CommsLaneItem, LaneSource } from '@/lib/comms-lanes';
 
-const LANE_ICON: Record<LaneSource, LucideIcon> = { email: Mail, whatsapp: MessageSquare };
+const LANE_ICON: Record<LaneSource, LucideIcon> = { email: Mail, whatsapp: MessageSquare, instagram: Instagram };
 const PRIORITY_VAR: Record<number, string> = { 1: 'var(--err)', 2: 'var(--warn)', 3: 'var(--ok)' };
 
 function ago(iso: string, nowISO: string): string {
@@ -81,6 +82,7 @@ function SendComposer({
   const [bodyText, setBodyText] = useState('');
   const [phase, setPhase] = useState<SendPhase>('idle');
   const [error, setError] = useState('');
+  const [demoSent, setDemoSent] = useState(false);
 
   const send = async () => {
     if (!to.trim() || !subject.trim() || !bodyText.trim()) return;
@@ -92,8 +94,9 @@ function SendComposer({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: 'email', account, to, subject, text: bodyText, inReplyTo, references }),
       });
-      const responseBody = (await response.json().catch(() => ({}))) as { error?: string };
+      const responseBody = (await response.json().catch(() => ({}))) as { error?: string; demo?: boolean };
       if (!response.ok) throw new Error(responseBody.error ?? `HTTP ${response.status}`);
+      setDemoSent(Boolean(responseBody.demo));
       setPhase('sent');
       setBodyText('');
     } catch (sendError) {
@@ -142,7 +145,7 @@ function SendComposer({
           <Send className="h-3 w-3" />
           {phase === 'sending' ? 'sending...' : 'send'}
         </button>
-        {phase === 'sent' ? <Badge tone="ok">sent</Badge> : null}
+        {phase === 'sent' ? <Badge tone="ok">{demoSent ? 'demo · not sent' : 'sent'}</Badge> : null}
         {phase === 'error' ? <span className="text-[10px] text-os-err">{error}</span> : null}
       </div>
     </div>
@@ -425,12 +428,13 @@ function InboxReader({ lane, nowISO, initialItemId, onClose }: { lane: CommsLane
 
 function LaneColumn({ lane, nowISO, onExpand, onOpenItem }: { lane: CommsLane; nowISO: string; onExpand?: () => void; onOpenItem?: (item: CommsLaneItem) => void }) {
   const Icon = LANE_ICON[lane.source];
-  const connected = lane.state === 'connected';
+  const connected = lane.state === 'connected' || lane.state === 'demo';
   return (
     <div className="flex w-[248px] shrink-0 flex-col border border-os-border bg-os-surface lg:w-auto">
       <div className="flex items-center gap-2 border-b border-os-border px-3 py-2.5">
         <Icon className={`h-[14px] w-[14px] shrink-0 ${connected ? 'text-os-accent' : 'text-os-dim'}`} />
         <span className="truncate text-[12px] font-semibold">{lane.name}</span>
+        {lane.state === 'demo' ? <Badge ghost>demo</Badge> : null}
         <span className="ml-auto flex items-center gap-1.5">
           {lane.unread > 0 ? <Badge tone="accent">{lane.unread}</Badge> : null}
           <Dot state={lane.state} pulse />
@@ -464,7 +468,7 @@ export function CommsBoard({ lanes, nowISO }: { lanes: CommsLane[]; nowISO: stri
 
   return (
     <div className="overflow-x-auto pb-1">
-      <div className="flex min-w-max gap-3 lg:grid lg:min-w-0 lg:grid-cols-5">
+      <div className="flex min-w-max gap-3 lg:grid lg:min-w-0 lg:grid-cols-4 xl:grid-cols-5">
         {lanes.map((lane) => (
           <LaneColumn
             key={lane.id}

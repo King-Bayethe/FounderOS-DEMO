@@ -17,6 +17,7 @@ export type IncomeAccount = {
   configured: boolean; // does this account have credentials in the env?
   live: boolean; // actually pulling real income right now (Stripe only, for now)
   income: number | null; // month-to-date income in USD (null = pending)
+  demo?: boolean; // demo mode: income is fictional sample data
 };
 
 /** Recent outgoing transfer (e.g. Wise) — money Alex sent out. */

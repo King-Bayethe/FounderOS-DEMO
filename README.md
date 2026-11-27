@@ -220,6 +220,15 @@ so they never touch the seeded dev DB.
 This is a demo build. All names, companies, clients, financial figures, and
 social numbers are **placeholder data**. Nothing here is real.
 
+Set `FOUNDER_OS_DEMO=1` for a public demo. Every source that is not configured
+then shows fictional sample data instead of an empty or "offline" state: two
+inboxes plus WhatsApp and Instagram DMs on Comms, agent runs, cron jobs and
+tasks on Agents, a two-week content calendar, income per processor on
+Finances, and a healthy G-Brain readout. Those sources read "demo" (never
+"connected"), a configured source always shows its real data, replies from a
+sample inbox are never sent, and the first-run cohort pop-up is skipped. The
+code lives in `lib/demo/`.
+
 ## License
 
 MIT. See [`LICENSE`](LICENSE).

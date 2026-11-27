@@ -397,6 +397,12 @@ body {
 .dot.err {
   background: var(--err);
 }
+.dot.demo {
+  background: var(--accent);
+}
+.dot.demo.pulse {
+  animation: led-blink 2.6s steps(1) infinite;
+}
 .dot.off {
   background: transparent;
   border: 1px solid var(--text-3);
@@ -406,7 +412,8 @@ body {
   85% { opacity: 0.25; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dot.ok.pulse {
+  .dot.ok.pulse,
+  .dot.demo.pulse {
     animation: none;
   }
 }
@@ -759,6 +766,12 @@ body {
    panel slide); while the panel is being drag-resized both move 1:1. */
 .os-shell {
   transition: margin-right 420ms var(--ease);
+}
+/* Phones: the content sits beside the 56px rail from first paint. */
+@media (max-width: 767px) {
+  :root {
+    --sidebar-w: 56px;
+  }
 }
 html.conductor-dragging .os-shell {
   transition: none;

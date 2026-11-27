@@ -35,14 +35,15 @@ function ConnectorBars({ connections }: { connections: ConnectorStatus[] }) {
   const gap = 2;
   const items = connections.slice(0, 16);
   const bw = Math.max(2, (w - gap * (items.length - 1)) / Math.max(1, items.length));
-  const color = (s: string) => (s === 'connected' ? 'var(--ok)' : s === 'error' ? 'var(--err)' : 'var(--dim)');
-  const barH = (s: string) => (s === 'connected' ? h - 4 : s === 'error' ? h - 9 : 6);
+  const color = (s: string) =>
+    s === 'connected' ? 'var(--ok)' : s === 'demo' ? 'var(--accent)' : s === 'error' ? 'var(--err)' : 'var(--dim)';
+  const barH = (s: string) => (s === 'connected' || s === 'demo' ? h - 4 : s === 'error' ? h - 9 : 6);
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
       {items.map((c, i) => {
         const bh = barH(c.state);
         return (
-          <rect key={c.id} x={(i * (bw + gap)).toFixed(1)} y={(h - bh).toFixed(1)} width={bw.toFixed(1)} height={bh} fill={color(c.state)} opacity={c.state === 'connected' ? 1 : 0.75} />
+          <rect key={c.id} x={(i * (bw + gap)).toFixed(1)} y={(h - bh).toFixed(1)} width={bw.toFixed(1)} height={bh} fill={color(c.state)} opacity={c.state === 'connected' ? 1 : c.state === 'demo' ? 0.6 : 0.75} />
         );
       })}
     </svg>
@@ -143,6 +144,7 @@ export default async function HomePage() {
   for (const r of recentRuns) if (!lastRunByAgent.has(r.agentId)) lastRunByAgent.set(r.agentId, r);
 
   const connected = connections.filter((c) => c.state === 'connected').length;
+  const demoConnectors = connections.filter((c) => c.state === 'demo').length;
   const activeAgents = agents.filter((a) => a.status === 'active').length;
   const health = overview.doctor.healthScore;
   const inbound = inboundLast24h(feed);
@@ -160,6 +162,7 @@ export default async function HomePage() {
     health: health ?? null,
     brainConnected: overview.doctor.connected,
     failedRuns,
+    demo: demoConnectors,
   });
   const { channels, all } = audienceSeries(db);
   // Real per-platform posting from Zernio history (cross-posts counted per
@@ -212,8 +215,8 @@ export default async function HomePage() {
         <StatTile
           href="/integrations"
           label="Systems"
-          value={connected}
-          unit={`/ ${connections.length} connected`}
+          value={demoConnectors > 0 ? connected + demoConnectors : connected}
+          unit={demoConnectors > 0 ? `/ ${connections.length} · ${demoConnectors} demo` : `/ ${connections.length} connected`}
           foot={<ConnectorBars connections={connections} />}
         />
         <StatTile
@@ -263,7 +266,7 @@ export default async function HomePage() {
 
       {/* Connections strip */}
       <section className="mb-[22px]">
-        <SectionHead label="Connections" count={`${connected}/${connections.length}`} link="Open board" href="/integrations" />
+        <SectionHead label="Connections" count={demoConnectors > 0 ? `${connected} live · ${demoConnectors} demo` : `${connected}/${connections.length}`} link="Open board" href="/integrations" />
         <div className="grid grid-cols-4 gap-3 max-[1100px]:grid-cols-2">
           {connections.slice(0, 12).map((c) => (
             <Link
@@ -271,8 +274,11 @@ export default async function HomePage() {
               href="/integrations"
               className="hoverable flex min-w-0 items-center gap-[9px] rounded-lg-t border border-os-border bg-os-surface px-3 py-[9px]"
             >
-              <Dot state={c.state} pulse={c.state === 'connected'} />
+              <Dot state={c.state} pulse={c.state === 'connected' || c.state === 'demo'} />
               <span className="flex-1 truncate text-[12.5px] font-semibold">{c.name}</span>
+              {c.state === 'demo' && (
+                <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.14em] text-os-dim">demo</span>
+              )}
               <ArrowUpRight className="h-3 w-3 shrink-0 text-os-dim" />
             </Link>
           ))}

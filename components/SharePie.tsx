@@ -55,7 +55,7 @@ export function SharePie({
 
   return (
     <div
-      className={`flex ${stacked ? 'flex-col items-center gap-3' : 'items-center gap-4'} ${
+      className={`flex min-w-0 ${stacked ? 'flex-col items-center gap-3' : 'items-center gap-4 max-sm:flex-col'} ${
         framed ? 'h-full rounded-lg-t border border-os-border bg-os-surface px-4 py-3' : ''
       }`}
     >
