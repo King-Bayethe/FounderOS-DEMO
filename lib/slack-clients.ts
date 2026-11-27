@@ -28,6 +28,8 @@ export type SlackClientCard = {
   heat: 'hot' | 'warm' | 'cold' | null;
   waiting: 'you' | 'them' | 'none';
   live: boolean;
+  /** Demo mode: a fictional sample card. */
+  demo?: boolean;
 };
 
 /**

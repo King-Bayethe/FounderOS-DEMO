@@ -1,4 +1,5 @@
-export type ConnectorState = 'connected' | 'not_configured' | 'error';
+/** 'demo' = not configured, filled with fictional sample data (demo mode only). */
+export type ConnectorState = 'connected' | 'not_configured' | 'error' | 'demo';
 
 export type ConnectorKind =
   | 'email'

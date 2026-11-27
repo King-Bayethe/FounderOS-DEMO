@@ -6,6 +6,9 @@ import { gatherSlackClientBoard } from '@/lib/slack-clients';
 import { listChannels } from '@/lib/connectors/slack';
 import { caldavAccounts, calendarStatus, upcomingEvents } from '@/lib/connectors/gcal';
 import { Badge, Dot, SectionHead } from '@/components/terminal';
+import { isDemoMode } from '@/lib/demo/mode';
+import { DEMO_CAL_ACCOUNTS, demoSlackCards, demoSlackChannels, demoWeekEvents } from '@/lib/demo/comms';
+import type { ConnectorStatus } from '@/lib/connectors/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +20,7 @@ const SOURCE_ICON: Record<string, LucideIcon> = {
 };
 
 export default async function CommsPage() {
-  const [{ lanes, emailState, whatsappState }, { cards: slackCards, status: slackState }, channels, calendar, weekEvents] =
+  const [{ lanes, emailState, whatsappState }, slackBoard, liveChannels, liveCalendar, liveWeekEvents] =
     await Promise.all([
       gatherCommsLanes(),
       gatherSlackClientBoard(),
@@ -26,11 +29,32 @@ export default async function CommsPage() {
       upcomingEvents(undefined, { days: 7, limit: 200 }),
     ]);
 
-  const calLegend = caldavAccounts().map((a) => ({ name: a.name, color: a.color }));
+  let slackCards = slackBoard.cards;
+  let slackState: ConnectorStatus = slackBoard.status;
+  let channels = liveChannels;
+  let calendar: ConnectorStatus = liveCalendar;
+  let weekEvents = liveWeekEvents;
+  let calLegend = caldavAccounts().map((a) => ({ name: a.name, color: a.color }));
+
+  // Demo mode: fill Slack and the meetings calendar with fictional samples,
+  // only when they are not really connected.
+  if (isDemoMode()) {
+    if (slackState.state !== 'connected') {
+      slackCards = demoSlackCards();
+      channels = demoSlackChannels();
+      slackState = { ...slackState, state: 'demo', detail: 'Sample client channels. Add SLACK_BOT_TOKEN to read real Slack.' };
+    }
+    if (calendar.state !== 'connected') {
+      weekEvents = demoWeekEvents();
+      calLegend = DEMO_CAL_ACCOUNTS;
+      calendar = { ...calendar, state: 'demo', detail: `${weekEvents.length} sample meetings this week. Live calendars read over CalDAV.` };
+    }
+  }
   const nowISO = new Date().toISOString();
   const sources = [emailState, whatsappState, slackState, calendar];
 
   const connectedSources = sources.filter((s) => s.state === 'connected').length;
+  const demoSources = sources.filter((s) => s.state === 'demo').length;
   const totalUnread = lanes.reduce((sum, lane) => sum + lane.unread, 0);
 
   return (
@@ -43,23 +67,24 @@ export default async function CommsPage() {
 
       {/* Source status row */}
       <section className="mb-7">
-        <SectionHead label="Sources" count={`${connectedSources}/${sources.length} connected`} />
+        <SectionHead label="Sources" count={demoSources > 0 ? `${connectedSources} connected · ${demoSources} demo` : `${connectedSources}/${sources.length} connected`} />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {sources.map((source) => {
             const Icon = SOURCE_ICON[source.id] ?? Mail;
             const ok = source.state === 'connected';
+            const demo = source.state === 'demo';
             return (
               <div key={source.id} className="hoverable rounded-2xl border border-os-border bg-os-surface px-4 py-3.5">
                 <div className="flex items-center gap-[9px]">
-                  <Icon className={`h-[15px] w-[15px] shrink-0 ${ok ? 'text-os-accent' : 'text-os-dim'}`} strokeWidth={1.7} />
+                  <Icon className={`h-[15px] w-[15px] shrink-0 ${ok || demo ? 'text-os-accent' : 'text-os-dim'}`} strokeWidth={1.7} />
                   <span className="text-[13px] font-semibold">{source.name}</span>
                   <span className="ml-auto flex items-center gap-2">
-                    {ok && <Dot state="connected" pulse />}
+                    {(ok || demo) && <Dot state={source.state} pulse />}
                     <Badge
-                      tone={ok ? 'ok' : source.state === 'error' ? 'err' : 'default'}
+                      tone={ok ? 'ok' : demo ? 'accent' : source.state === 'error' ? 'err' : 'default'}
                       ghost={source.state === 'not_configured'}
                     >
-                      {ok ? 'Connected' : source.state === 'error' ? 'Error' : 'Not configured'}
+                      {ok ? 'Connected' : demo ? 'Demo data' : source.state === 'error' ? 'Error' : 'Not configured'}
                     </Badge>
                   </span>
                 </div>

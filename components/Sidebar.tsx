@@ -64,10 +64,16 @@ const COLLAPSED_W = 56;
 const MIN_W = 190;
 const MAX_W = 420;
 const DEFAULT_W = 232;
+/** Below this width the sidebar is a 56px rail and opens over the page. */
+const PHONE_MAX = 767;
+
+function isPhone(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia(`(max-width: ${PHONE_MAX}px)`).matches;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [live, setLive] = useState<{ up: number; total: number } | null>(null);
+  const [live, setLive] = useState<{ up: number; demo: number; total: number } | null>(null);
   const [host, setHost] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   // The nav scrolls, and any scrolling ancestor clips an absolutely positioned
@@ -81,8 +87,14 @@ export function Sidebar() {
   useEffect(() => {
     const savedW = Number(localStorage.getItem('founderos.sidebar.w'));
     if (Number.isFinite(savedW) && savedW >= MIN_W && savedW <= MAX_W) setWidth(savedW);
-    setCollapsed(localStorage.getItem('founderos.sidebar.collapsed') === '1');
+    // Phones always open on the rail; the expanded menu overlays the page.
+    setCollapsed(isPhone() || localStorage.getItem('founderos.sidebar.collapsed') === '1');
   }, []);
+
+  // On a phone, picking a page closes the overlay menu.
+  useEffect(() => {
+    if (isPhone()) setCollapsed(true);
+  }, [pathname]);
 
   // Where this instance actually is. Client-only: there is no location
   // during SSR.
@@ -98,11 +110,14 @@ export function Sidebar() {
   // The shell's left margin reads this, so the page follows the sidebar
   // instead of the width being duplicated in two places.
   useEffect(() => {
-    const w = collapsed ? COLLAPSED_W : width;
+    // On a phone the content keeps the rail's margin and the open menu
+    // slides over it, rather than squeezing the page to a sliver.
+    const w = collapsed || isPhone() ? COLLAPSED_W : width;
     document.documentElement.style.setProperty('--sidebar-w', `${w}px`);
   }, [collapsed, width]);
 
   useEffect(() => {
+    if (isPhone()) return; // a phone's forced rail must not overwrite the desktop choice
     localStorage.setItem('founderos.sidebar.collapsed', collapsed ? '1' : '0');
   }, [collapsed]);
 
@@ -145,6 +160,7 @@ export function Sidebar() {
         if (cancelled || !Array.isArray(body.connections)) return;
         setLive({
           up: body.connections.filter((c) => c.state === 'connected').length,
+          demo: body.connections.filter((c) => c.state === 'demo').length,
           total: body.connections.length,
         });
       })
@@ -156,7 +172,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="fixed inset-y-0 left-0 z-20 flex flex-col border-r border-os-border bg-os-bg2"
+      className="fixed inset-y-0 left-0 z-20 flex flex-col border-r border-os-border bg-os-bg2 max-md:z-40"
       style={{ width: collapsed ? COLLAPSED_W : width }}
     >
       <div
@@ -205,7 +221,12 @@ export function Sidebar() {
       >
         <div className="flex items-center gap-2 whitespace-nowrap font-mono text-[10px] text-os-muted">
           <span className="dot ok pulse" />
-          {!collapsed && <>{live ? `${live.up}/${live.total}` : '—/—'} systems live</>}
+          {!collapsed && (
+            <>
+              {live ? `${live.up}/${live.total}` : '—/—'} systems live
+              {live && live.demo > 0 ? ` · ${live.demo} demo` : ''}
+            </>
+          )}
         </div>
         {!collapsed && (
           // The host is read at runtime, so a deployed instance never claims to

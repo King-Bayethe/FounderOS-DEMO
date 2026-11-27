@@ -51,7 +51,7 @@ function AgentRosterCard({
   const active = agent.status === 'active';
   return (
     <article
-      className="hoverable group flex min-h-48 flex-col rounded-lg-t border bg-os-surface p-4"
+      className="hoverable group flex min-h-48 min-w-0 flex-col rounded-lg-t border bg-os-surface p-4"
       style={{ borderColor: active ? 'color-mix(in oklab, var(--accent) 35%, var(--border))' : 'var(--border)' }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -156,7 +156,7 @@ export default function AgentsPage() {
             <section key={dept.id}>
               <SectionHead label={dept.name} count={`${deptAgents.length} agents`} />
               <div className="-mt-1 mb-3 text-[11.5px] text-os-dim">{dept.tagline}</div>
-              <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 ultra:grid-cols-5">
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 ultra:grid-cols-5">
                 {deptAgents.map((agent) => (
                   <AgentRosterCard
                     key={agent.id}

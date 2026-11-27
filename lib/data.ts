@@ -2,6 +2,8 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { openDb, type FounderDb } from '@/lib/db';
 import { seedDatabase } from '@/lib/seed';
+import { isDemoMode } from '@/lib/demo/mode';
+import { refreshDemoActivity } from '@/lib/demo/seed';
 
 /**
  * App-level singleton. Larp-first, real-ready: every page and API route reads
@@ -11,7 +13,10 @@ import { seedDatabase } from '@/lib/seed';
 let instance: FounderDb | null = null;
 
 export function getDb(): FounderDb {
-  if (instance) return instance;
+  if (instance) {
+    if (isDemoMode()) refreshDemoActivity(instance);
+    return instance;
+  }
   const dbPath = process.env.FOUNDER_OS_DB ?? path.join(process.cwd(), 'data', 'founder-os.db');
   if (dbPath !== ':memory:') fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   instance = openDb(dbPath);
@@ -30,5 +35,7 @@ export function getDb(): FounderDb {
   ) {
     seedDatabase(instance);
   }
+  // Demo mode: sample agent runs, crons and tasks, kept relative to now.
+  if (isDemoMode()) refreshDemoActivity(instance);
   return instance;
 }

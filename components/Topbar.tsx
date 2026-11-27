@@ -23,19 +23,27 @@ export function openPalette() {
   window.dispatchEvent(new CustomEvent('alex:palette'));
 }
 
-export function Topbar() {
+export function Topbar({ demo = false }: { demo?: boolean }) {
   const pathname = usePathname();
   const segment = pathname.split('/')[1] ?? '';
   const here = SEGMENT_LABELS[segment] ?? segment;
 
   return (
-    <div className="sticky top-0 z-30 flex h-[52px] shrink-0 items-center gap-3.5 border-b border-os-border bg-os-bg2/70 px-6 backdrop-blur">
-      <div className="flex items-center gap-[7px] whitespace-nowrap font-mono text-[11px] tracking-[0.04em] text-os-dim">
-        <span>founder-os</span>
-        <span className="opacity-45">/</span>
-        <span className="text-os-text">{here}</span>
+    <div className="sticky top-0 z-30 flex h-[52px] shrink-0 items-center gap-3.5 border-b border-os-border bg-os-bg2/70 px-6 backdrop-blur max-md:gap-2 max-md:px-3">
+      <div className="flex min-w-0 items-center gap-[7px] whitespace-nowrap font-mono text-[11px] tracking-[0.04em] text-os-dim">
+        <span className="max-md:hidden">founder-os</span>
+        <span className="opacity-45 max-md:hidden">/</span>
+        <span className="truncate text-os-text">{here}</span>
       </div>
-      <div className="ml-auto flex items-center gap-2.5">
+      <div className="ml-auto flex shrink-0 items-center gap-2.5 max-md:gap-1.5">
+        {demo && (
+          <span
+            title="Every name, message and number here is fictional sample data"
+            className="hidden whitespace-nowrap rounded-sm-t border border-dashed border-os-border-strong px-2 py-1 font-mono text-[9.5px] uppercase tracking-[0.16em] text-os-dim sm:inline-block"
+          >
+            demo · sample data
+          </span>
+        )}
         <ThemeToggle />
         <button
           onClick={openPalette}
@@ -55,7 +63,7 @@ export function Topbar() {
           <Bot className="h-3.5 w-3.5" />
         </button>
         {/* the OS mark, anchoring the brand in the top-right corner */}
-        <OsMark size={26} className="ml-1 shrink-0" />
+        <OsMark size={26} className="ml-1 shrink-0 max-md:hidden" />
       </div>
     </div>
   );

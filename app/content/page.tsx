@@ -7,6 +7,9 @@ import { PageHeader } from '@/components/PageHeader';
 import { LeadMagnets } from '@/components/LeadMagnets';
 import { Badge, Dot, SectionHead } from '@/components/terminal';
 import type { Agent } from '@/lib/schemas';
+import { ContentCalendar } from '@/components/ContentCalendar';
+import { isDemoMode } from '@/lib/demo/mode';
+import { demoCalendar } from '@/lib/demo/content';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,6 +108,9 @@ export default async function ContentPage() {
   const posts = await zernioRecentPosts(8).catch(() => []);
   const days = await zernioPostDays().catch(() => []);
   const activeDays = days.filter((d) => d.platforms.length > 0).length;
+  const demo = isDemoMode();
+  const calendar = demo ? demoCalendar() : [];
+  const scheduled = calendar.filter((p) => p.status === 'scheduled').length;
 
   return (
     <div>
@@ -155,11 +161,22 @@ export default async function ContentPage() {
         )}
       </section>
 
+      {/* Content calendar — this week and next (demo mode: sample plan) */}
+      {calendar.length > 0 && (
+        <section className="mt-8">
+          <SectionHead label="Content calendar" count={`${scheduled} scheduled · demo`} />
+          <p className="mb-3 text-xs text-os-dim">
+            Two weeks of posts across every platform: published, scheduled and drafts the Social Agent is working on.
+          </p>
+          <ContentCalendar posts={calendar} nowMs={Date.now()} />
+        </section>
+      )}
+
       {/* Zernio content pipeline — recent published content + cadence */}
       <section className="mt-8">
         <SectionHead
           label="Zernio content pipeline"
-          count={posts.length > 0 ? `${posts.length} recent` : 'no live pull'}
+          count={posts.length > 0 ? `${posts.length} recent${demo && posts.every((p) => !p.url) ? ' · demo' : ''}` : 'no live pull'}
         />
         <p className="mb-3 flex items-center gap-1.5 text-xs text-os-dim">
           Published across six platforms via Zernio · {activeDays} active days tracked · full dashboard in{' '}

@@ -355,9 +355,9 @@ export default async function FunnelPage({
   return (
     <div>
       {/* Camera-ready: two slim rows, then the space owns the viewport. */}
-      <header className="mb-2 flex items-end justify-between gap-4">
-        <h1 className="text-[25px] font-bold uppercase leading-[1.1] tracking-[0.06em]">Funnel</h1>
-        <div className="flex shrink-0 items-center gap-2">
+      <header className="mb-2 flex items-end justify-between gap-4 max-md:flex-wrap max-md:items-start">
+        <h1 className="text-[25px] font-bold uppercase leading-[1.1] tracking-[0.06em] max-md:text-[20px]">Funnel</h1>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           {isLive ? (
             <Badge tone="ok">live · {liveLabel}</Badge>
           ) : (

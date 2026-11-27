@@ -180,7 +180,7 @@ export default function OrgChartPage({ searchParams }: { searchParams?: { ventur
       </div>
 
       {/* AI Head row: G-Brain ── Conductor ── Comms Feed */}
-      <div className="flex items-center justify-center gap-0">
+      <div className="flex items-center justify-center gap-0 max-md:flex-wrap max-md:gap-2">
         <SystemCard href="/brain" title="G-Brain" caption="markdown + pgvector knowledge store" />
         <div className="hidden h-px w-10 bg-os-border-bright md:block" />
         {conductor ? (

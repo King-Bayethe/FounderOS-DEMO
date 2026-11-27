@@ -3,7 +3,7 @@
  * Server-component friendly: no state, no handlers.
  */
 
-export type DotState = 'ok' | 'warn' | 'err' | 'off';
+export type DotState = 'ok' | 'warn' | 'err' | 'off' | 'demo';
 
 const DOT_FOR: Record<string, DotState> = {
   connected: 'ok',
@@ -16,6 +16,7 @@ const DOT_FOR: Record<string, DotState> = {
   error: 'err',
   fail: 'err',
   not_configured: 'off',
+  demo: 'demo',
   planned: 'off',
   off: 'off',
 };
@@ -26,7 +27,7 @@ export function dotState(state: string): DotState {
 
 export function Dot({ state, pulse = false }: { state: string; pulse?: boolean }) {
   const cls = dotState(state);
-  return <span className={`dot ${cls}${pulse && cls === 'ok' ? ' pulse' : ''}`} />;
+  return <span className={`dot ${cls}${pulse && (cls === 'ok' || cls === 'demo') ? ' pulse' : ''}`} />;
 }
 
 export type BadgeTone = 'default' | 'accent' | 'ok' | 'warn' | 'err';
@@ -71,8 +72,8 @@ export function Label({
 }) {
   return (
     <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.26em] text-os-dim">
-      <span className="whitespace-nowrap">{children}</span>
-      {count != null && <span className="text-os-muted">{count}</span>}
+      <span className="whitespace-nowrap max-md:min-w-0 max-md:whitespace-normal">{children}</span>
+      {count != null && <span className="text-os-muted max-md:shrink-0">{count}</span>}
       {rule && <span className="h-px flex-1 bg-os-border" />}
     </div>
   );

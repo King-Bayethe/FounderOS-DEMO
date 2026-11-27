@@ -65,7 +65,7 @@ function ClientCard({ card, nowISO }: { card: SlackClientCard; nowISO: string })
           {WAIT_LABEL[card.waiting]}
         </span>
         <span className="ml-auto shrink-0">
-          {card.live ? <Badge tone="ok">live</Badge> : <Badge ghost>quiet</Badge>}
+          {card.demo ? <Badge ghost>demo</Badge> : card.live ? <Badge tone="ok">live</Badge> : <Badge ghost>quiet</Badge>}
         </span>
       </div>
     </div>

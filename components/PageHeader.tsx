@@ -15,19 +15,19 @@ export function PageHeader({
 }) {
   // No descriptions under titles — Alex built it, he knows what it does.
   return (
-    <header className={`mb-6 flex justify-between gap-4 ${rightWide ? 'items-start' : 'items-end'}`}>
-      <div className="min-w-0 shrink-0">
+    <header className={`mb-6 flex justify-between gap-4 ${rightWide ? 'items-start max-md:flex-wrap' : 'items-end'}`}>
+      <div className="min-w-0 shrink-0 max-md:shrink">
         {eyebrow && (
           <div className="page-eyebrow mb-2 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.32em] text-os-dim">
             {eyebrow}
           </div>
         )}
-        <h1 className={`text-[25px] font-bold uppercase leading-[1.1] tracking-[0.06em]${caret ? ' caret-blink' : ''}`}>
+        <h1 className={`text-[25px] font-bold uppercase leading-[1.1] tracking-[0.06em] max-md:text-[20px] max-md:[overflow-wrap:anywhere]${caret ? ' caret-blink' : ''}`}>
           {title}
         </h1>
       </div>
       {right && (
-        <div className={rightWide ? 'flex min-w-0 flex-1 items-start' : 'flex shrink-0 items-center gap-2'}>
+        <div className={rightWide ? 'flex min-w-0 flex-1 items-start max-md:basis-full' : 'flex shrink-0 items-center gap-2'}>
           {right}
         </div>
       )}

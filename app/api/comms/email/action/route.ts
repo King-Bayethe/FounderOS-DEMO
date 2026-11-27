@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { updateEmailThread } from '@/lib/connectors/email';
+import { isDemoAccount, isDemoMode } from '@/lib/demo/mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,8 @@ export async function POST(request: Request) {
   const parsed = ActionSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const { account, ...operation } = parsed.data;
+  // Sample inbox: acknowledge the action without touching any mailbox.
+  if (isDemoMode() && isDemoAccount(account)) return NextResponse.json({ ok: true, demo: true });
   const result = await updateEmailThread({ accountId: account, ...operation });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 502 });
   return NextResponse.json({ ok: true, ...result.value });

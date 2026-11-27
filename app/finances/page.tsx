@@ -16,6 +16,8 @@ import { SharePie } from '@/components/SharePie';
 import { StatementUploader } from '@/components/StatementUploader';
 import { BusinessIncomeChart } from '@/components/BusinessIncomeChart';
 import { Badge, Label, SectionHead } from '@/components/terminal';
+import { isDemoMode } from '@/lib/demo/mode';
+import { DEMO_INCOME_MTD, DEMO_STRIPE, demoBusinessSeries, demoRecentCharges } from '@/lib/demo/finances';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +67,17 @@ export default async function FinancesPage() {
   const liveIncomeUsd: Record<string, number> = {};
   if (fbAa != null) liveIncomeUsd['fanbasis-lc'] = fbAa;
   if (fbMer != null) liveIncomeUsd['fanbasis-vantage'] = fbMer;
-  const accounts = incomeAccounts({ connected: stripeLive, mtdUsd }, configuredMap, liveIncomeUsd);
+  const demo = isDemoMode();
+  // Demo mode: unwired accounts carry labelled sample income; live ones stay real.
+  const accounts = incomeAccounts({ connected: stripeLive, mtdUsd }, configuredMap, liveIncomeUsd).map((a) =>
+    demo && !a.live && DEMO_INCOME_MTD[a.id] != null ? { ...a, income: DEMO_INCOME_MTD[a.id], demo: true } : a,
+  );
+  const stripeDemo = demo && !stripeLive;
+  if (stripeDemo) {
+    available = DEMO_STRIPE.available;
+    pending = DEMO_STRIPE.pending;
+    recent = demoRecentCharges();
+  }
   // Outgoing Wise transfers — null (no Wise key) hides the section entirely.
   const wiseOut = await wiseOutgoing(process.env).catch(() => null);
   const incomeMtd = totalIncome(accounts);
@@ -91,6 +103,7 @@ export default async function FinancesPage() {
   } catch {
     bankSeries = [];
   }
+  if (demo && bankSeries.length === 0) bankSeries = demoBusinessSeries();
   // "2026-06" → "Jun 2026" for an honest period label on the uploaded figures.
   const monthLabel = ledgerMonth
     ? new Date(`${ledgerMonth}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
@@ -99,6 +112,8 @@ export default async function FinancesPage() {
   const expenses = expensesLive ? ledgerSpend.reduce((s, c) => s + c.total, 0) : totalExpenses(SAMPLE_EXPENSES);
   const netMonthly = net(incomeMtd, expenses);
   const liveCount = accounts.filter((a) => a.live).length;
+  const demoCount = accounts.filter((a) => a.demo).length;
+  const liveLabel = demoCount > 0 ? `${liveCount} live · ${demoCount} demo` : `${liveCount}/${accounts.length} live`;
   const maxAccount = Math.max(...accounts.map((a) => a.income ?? 0), 1);
   const maxCategory = Math.max(...byCategory.map((c) => c.total), 1);
 
@@ -127,7 +142,7 @@ export default async function FinancesPage() {
               {usd(incomeMtd)}
             </span>
             <span className="min-w-0 truncate font-mono text-[9.5px] uppercase tracking-[0.1em] text-os-dim">
-              {liveCount}/{accounts.length} live
+              {liveLabel}
             </span>
           </div>
         </div>
@@ -170,10 +185,10 @@ export default async function FinancesPage() {
           </div>
           <div className="flex items-baseline justify-between gap-2">
             <span className="font-mono text-[16px] font-semibold leading-none tracking-[-0.02em]">
-              {stripeLive ? usd(available, true) : '—'}
+              {stripeLive || stripeDemo ? usd(available, true) : '—'}
             </span>
             <span className="min-w-0 truncate font-mono text-[9.5px] uppercase tracking-[0.1em] text-os-dim">
-              {stripeLive ? `${usd(pending, true)} pending` : 'connect Stripe'}
+              {stripeLive ? `${usd(pending, true)} pending` : stripeDemo ? `${usd(pending, true)} pending · demo` : 'connect Stripe'}
             </span>
           </div>
         </div>
@@ -183,8 +198,8 @@ export default async function FinancesPage() {
       {/* Income by business — from uploaded bank statements, with a range dropdown */}
       {bankSeries.length > 0 && (
         <section className="mb-5">
-          <SectionHead label="Income · by business" count="bank deposits" />
-          <div className="grid gap-3.5 lg:grid-cols-2">
+          <SectionHead label="Income · by business" count={demo && bankSeries.some((b) => b.business.includes('(sample)')) ? 'bank deposits · demo' : 'bank deposits'} />
+          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
             {bankSeries.map((s) => (
               <BusinessIncomeChart key={s.business} series={s} />
             ))}
@@ -198,7 +213,7 @@ export default async function FinancesPage() {
           label="Monthly expenses · by category"
           count={expensesLive && monthLabel ? `${usd(expenses)} · ${monthLabel}` : `${usd(expenses)} /mo`}
         />
-        <div className="grid items-stretch gap-3.5 lg:grid-cols-[1.15fr_1fr_0.85fr]">
+        <div className="grid grid-cols-1 items-stretch gap-3.5 lg:grid-cols-[1.15fr_1fr_0.85fr]">
           {/* where the money goes — share per category */}
           <SharePie
             items={byCategory.map((c) => ({ key: c.category, label: c.category, value: Math.round(c.total * 100) }))}
@@ -231,7 +246,7 @@ export default async function FinancesPage() {
       </section>
 
       <section className="mb-5">
-        <SectionHead label="Income · by processor" count={`${liveCount}/${accounts.length} live`} />
+        <SectionHead label="Income · by processor" count={liveLabel} />
         <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
           {accounts.map((a) => (
             <div key={a.id} className="hoverable rounded-lg-t border border-os-border bg-os-surface px-4 py-3">
@@ -240,7 +255,9 @@ export default async function FinancesPage() {
                   <div className="text-[13px] font-semibold">{a.label}</div>
                   <div className="mt-0.5 font-mono text-[9.5px] text-os-dim">{a.processor}</div>
                 </div>
-                {a.live ? (
+                {a.demo ? (
+                  <Badge ghost>demo</Badge>
+                ) : a.live ? (
                   <Badge tone="ok">
                     <span className="dot ok pulse mr-1 inline-block" /> live
                   </Badge>
@@ -255,7 +272,7 @@ export default async function FinancesPage() {
                   {a.income != null ? usd(a.income) : '—'}
                 </span>
                 <span className="font-mono text-[9.5px] text-os-dim">
-                  {a.live ? 'this month' : a.configured ? 'pull pending' : 'awaiting key'}
+                  {a.live ? 'this month' : a.demo ? 'this month · sample' : a.configured ? 'pull pending' : 'awaiting key'}
                 </span>
               </div>
               <div className="mt-2 h-1 overflow-hidden rounded-sm-t bg-os-surface2">
@@ -298,9 +315,9 @@ export default async function FinancesPage() {
       )}
 
       {/* Recent income — real Stripe charges */}
-      {stripeLive && recent.length > 0 && (
+      {(stripeLive || stripeDemo) && recent.length > 0 && (
         <section>
-          <SectionHead label="Recent income" count="Stripe · live" />
+          <SectionHead label="Recent income" count={stripeDemo ? 'Stripe · demo' : 'Stripe · live'} />
           <ul className="space-y-1.5">
             {recent.map((c, i) => (
               <li

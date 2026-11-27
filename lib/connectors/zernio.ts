@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import { isDemoMode } from '@/lib/demo/mode';
+import { demoPostDays, demoRecentPosts } from '@/lib/demo/content';
 import os from 'node:os';
 import path from 'node:path';
 import { CRED_FILES, resolveCred } from '@/lib/creds';
@@ -170,7 +172,7 @@ export async function zernioPostDays(): Promise<ZernioPostDay[]> {
   const now = Date.now();
   if (postDaysCache && now - postDaysCache.at < LIVE_TTL_MS) return postDaysCache.data;
   const key = zernioKey();
-  if (!key) return [];
+  if (!key) return isDemoMode() ? demoPostDays() : [];
   const config = readConfig();
   try {
     const res = await fetch(`${config.baseUrl ?? 'https://getlate.dev/api'}/history?limit=200`, {
@@ -194,7 +196,7 @@ export async function zernioRecentPosts(limit = 6): Promise<ZernioPost[]> {
   const now = Date.now();
   if (livePostsCache && now - livePostsCache.at < LIVE_TTL_MS) return livePostsCache.data.slice(0, limit);
   const key = zernioKey();
-  if (!key) return [];
+  if (!key) return isDemoMode() ? demoRecentPosts(limit) : [];
   const config = readConfig();
   try {
     const res = await fetch(`${config.baseUrl ?? 'https://getlate.dev/api'}/history`, {
